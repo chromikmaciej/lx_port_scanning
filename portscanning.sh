@@ -4,7 +4,6 @@
 OUTPUT_FILE=$(hostname)@$(date +%T_"%Y-%m-%d")
 
 INTERVAL=10  # Czas między zbieraniem danych w sekundach
-DURATION=5   # Czas trwania nasłuchu przez tcpdump w sekundach
 
 # Sprawdzenie, czy skrypt jest uruchamiany z odpowiednimi uprawnieniami
 if [[ $EUID -ne 0 ]]; then
@@ -41,37 +40,40 @@ while true; do
     TEMP_FILE_TCP_CONNECTIONS=$(mktemp)
     TEMP_FILE_UDP_CONNECTIONS=$(mktemp)
 
-    # Zbieranie aktywnych połączeń TCP z wykorzystaniem ss (ignorowanie IPv6)
-    ss -tunap | awk '
-    /^tcp/ && !/::/ {  # Ignoruj wiersze z IPv6
-        split($5, local_addr, ":");
-        split($6, remote_addr, ":");
-        if (remote_addr[1] != "" && remote_addr[1] != "*") {
-            printf "TCP, %s:%s, %s, Active\n", local_addr[1], local_addr[2], remote_addr[1]
-        }
+    # Zbieranie aktywnych połączeń TCP
+    ss -tnap | awk '
+    /^ESTAB/ {  # Ignoruj IPv6
+        split($4, local_addr, ":");
+        split($5, remote_addr, ":");
+	local_port = local_addr[2]
+	if (local_port > 30000) {
+       		if (remote_addr[1] != "" && remote_addr[1] != "*") {
+            		printf "TCP, %ss, %s:%s, Active\n", local_addr[1], remote_addr[1], remote_addr[2]
+        	}
+	} else {
+       		if (remote_addr[1] != "" && remote_addr[1] != "*") {
+            		printf "TCP, %s:%s, %s, Active\n", local_addr[1], local_addr[2], remote_addr[1]
+        	}
+	}
     }
     ' >> $TEMP_FILE_TCP_CONNECTIONS
 
-    # Zbieranie aktywnych połączeń UDP z wykorzystaniem netstat
-    netstat -unap 2>/dev/null | awk '
-    /^udp/ {
-        split($4, local_addr, ":");
-        split($5, remote_addr, ":");
-        if (remote_addr[1] != "" && remote_addr[1] != "*") {
-            printf "UDP, %s:%s, %s, Active\n", local_addr[1], local_addr[2], remote_addr[1]
-        } else {
-            printf "UDP, %s:%s, %s, Active\n", local_addr[1], local_addr[2], "0"
-        }
+    # Zbieranie aktywnych połączeń UDP
+    ss -unap | awk '
+    /^UNCONN/ {
+        split($5, local_addr, ":");
+        split($6, remote_addr, ":");
+        printf "UDP, %s:%s, %s, Active\n", local_addr[1], local_addr[2], (remote_addr[1] ? remote_addr[1] : "0")
     }
     ' >> $TEMP_FILE_UDP_CONNECTIONS
 
-    # Zbieranie portów nasłuchujących (ignorowanie IPv6)
+    # Zbieranie portów nasłuchujących
     ss -tunlp | awk '
-    /^tcp/ && !/::/ {
+    /^tcp/ {
         split($5, local_addr, ":");
         printf "TCP, %s:%s, Listening\n", local_addr[1], local_addr[2]
     }
-    /^udp/ && !/::/ {
+    /^udp/ {
         split($5, local_addr, ":");
         printf "UDP, %s:%s, Listening\n", local_addr[1], local_addr[2]
     }
