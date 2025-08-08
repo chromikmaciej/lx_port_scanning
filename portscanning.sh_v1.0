@@ -28,10 +28,10 @@ if [ ! -f $OUTPUT_FILE ]; then
     echo "Protokół, Lokalny adres (IP:Port), Typ" >> $OUTPUT_FILE
     echo "" >> $OUTPUT_FILE
     echo "Sekcja 2: Połączenia TCP:" >> $OUTPUT_FILE
-    echo "Protokół, Lokalny adres (IP:Port), Zdalny adres IP, Typ" >> $OUTPUT_FILE
+    echo "Protokół, Lokalny adres (IP:Port), Zdalny adres IP:Port, Typ" >> $OUTPUT_FILE
     echo "" >> $OUTPUT_FILE
     echo "Sekcja 3: Połączenia UDP:" >> $OUTPUT_FILE
-    echo "Protokół, Lokalny adres (IP:Port), Zdalny adres IP, Typ" >> $OUTPUT_FILE
+    echo "Protokół, Lokalny adres (IP:Port), Zdalny adres IP:Port, Typ" >> $OUTPUT_FILE
     echo "" >> $OUTPUT_FILE
 fi
 
@@ -47,21 +47,30 @@ while true; do
         split($5, local_addr, ":");
         split($6, remote_addr, ":");
         if (remote_addr[1] != "" && remote_addr[1] != "*") {
-            printf "TCP, %s:%s, %s, Active\n", local_addr[1], local_addr[2], remote_addr[1]
+            printf "TCP, %s:%s, %s:%s, Active\n", local_addr[1], local_addr[2], remote_addr[1], remote_addr[2]
         }
     }
     ' >> $TEMP_FILE_TCP_CONNECTIONS
 
-    # Zbieranie aktywnych połączeń UDP z wykorzystaniem netstat
-    netstat -unap 2>/dev/null | awk '
-    /^udp/ {
-        split($4, local_addr, ":");
-        split($5, remote_addr, ":");
-        if (remote_addr[1] != "" && remote_addr[1] != "*") {
-            printf "UDP, %s:%s, %s, Active\n", local_addr[1], local_addr[2], remote_addr[1]
-        } else {
-            printf "UDP, %s:%s, %s, Active\n", local_addr[1], local_addr[2], "0"
-        }
+    # Zbieranie aktywnych połączeń UDP za pomocą tcpdump
+    tcpdump -nn -c 100 -i any udp 2>/dev/null | awk '
+    /IP/ {
+        # Wyodrębnienie lokalnego i zdalnego adresu IP oraz portu
+        split($3, local, ":");
+        split($5, remote, ":");
+        
+        # Poprawne formatowanie adresów IP i portów
+        local_ip = local[1]
+        local_port = local[2]
+        remote_ip = remote[1]
+        remote_port = remote[2]
+
+        # Sprawdzenie, czy porty są dostępne
+        if (local_port == "") local_port = "0"
+        if (remote_port == "") remote_port = "0"
+
+        # Użycie printf do formatu wyjściowego
+        printf "UDP, %s:%s, %s:%s, Active\n", local_ip, local_port, remote_ip, remote_port
     }
     ' >> $TEMP_FILE_UDP_CONNECTIONS
 
