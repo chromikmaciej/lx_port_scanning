@@ -57,9 +57,8 @@ while true; do
     /IP/ {
         split($3, local, ":");
         split($5, remote, ":");
-        sub(/:/, "", remote[4]);  # Usuwamy ":" z zdalnego portu
-        if (length(remote) > 4) {
-            printf "UDP, %s:%s, %s, %s, Active\n", local[1], local[2], remote[1], remote[4]
+        if (length(remote) > 1) {
+            printf "UDP, %s:%s, %s, %s, Active\n", local[1], local[2], remote[1], remote[2]
         } else {
             printf "UDP, %s:%s, %s, , Active\n", local[1], local[2], remote[1]
         }
