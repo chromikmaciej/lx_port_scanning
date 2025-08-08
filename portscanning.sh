@@ -48,7 +48,7 @@ while true; do
 	local_port = local_addr[2]
 	if (local_port > 30000) {
        		if (remote_addr[1] != "" && remote_addr[1] != "*") {
-            		printf "TCP, %ss, %s:%s, Active\n", local_addr[1], remote_addr[1], remote_addr[2]
+            		printf "TCP, %s, %s:%s, Active\n", local_addr[1], remote_addr[1], remote_addr[2]
         	}
 	} else {
        		if (remote_addr[1] != "" && remote_addr[1] != "*") {
@@ -61,9 +61,14 @@ while true; do
     # Zbieranie aktywnych połączeń UDP
     ss -unap | awk '
     /^UNCONN/ {
-        split($5, local_addr, ":");
-        split($6, remote_addr, ":");
-        printf "UDP, %s:%s, %s, Active\n", local_addr[1], local_addr[2], (remote_addr[1] ? remote_addr[1] : "0")
+        split($4, local_addr, ":");
+        split($5, remote_addr, ":");
+	local_port = local_addr[2]
+	if (local_port < 30000) {
+		if (local_addr[1] != "" && local_addr[1] != "*") {
+      	 		printf "UDP, %s:%s, %s, Active\n", local_addr[1], local_addr[2], remote_addr[1]
+		}
+	}
     }
     ' >> $TEMP_FILE_UDP_CONNECTIONS
 
