@@ -48,13 +48,14 @@ for FILE in "$RESULT_DIR"/*; do
                 	        PORT=$(echo "$ADDR_PORT" | cut -d':' -f2)
                         
                		        # Dodawanie reguły tylko, jeśli port nie został wcześniej dodany
-               		        if [[ -z "${ADDED_PORTS[$PORT]}" ]]; then
+               		        if [[ -z "${ADDED_PORTS[$PROTOCOL,$PORT]}" ]]; then
+
                 		        if [[ "$PROTOCOL" == "TCP" ]]; then
                        		        echo "    tcp dport $PORT accept;"
                    		        elif [[ "$PROTOCOL" == "UDP" ]]; then
                        		        echo "    udp dport $PORT accept;"
                    		        fi
-                   	            ADDED_PORTS[$PORT]=1  # Oznacz port jako dodany
+                   	            ADDED_PORTS[$PROTOCOL,$PORT]=1  # Oznacz port jako dodany
                                 PORTS_FOUND=true
                             fi
                         fi
