@@ -30,7 +30,7 @@ for FILE in "$RESULT_DIR"/*; do
         PORTS_FOUND=false
 
         # Tablica do przechowywania dodanych portów
-        declare -A ADDED_PORTS
+    	declare -A ADDED_PORTS
 
         # Przetwarzanie sekcji otwartych portów
         while read -r line; do
@@ -70,6 +70,8 @@ for FILE in "$RESULT_DIR"/*; do
 
         echo "  }"
         echo "}"
+
+    	unset ADDED_PORTS
 
     } > "$OUTPUT_FILE"
 
