@@ -1,21 +1,32 @@
 #!/bin/bash
 
-# Ścieżki do plików
-zestawienie_file="zestawienie.csv"
-export_file="export.csv"
-output_file="wynik.csv"
+# Pliki wejściowe i wyjściowe
+zestawienie="zestawienie.csv"
+export="export.csv"
+wyniki="wyniki.csv"
 
-# Nagłówki pliku wynikowego
-echo "Hostname;SOSGodzina;SOSData;Krytyczność;Computer" > $output_file
+# Sprawdzenie, czy plik wynikowy istnieje i usunięcie go, jeśli tak
+if [ -f "$wyniki" ]; then
+  rm "$wyniki"
+fi
 
-# Przetwarzaj każdy element w zestawieniu
-while IFS= read -r item; do
-    # Znajdź odpowiednie wiersze w pliku export.csv
-    grep -F "$item" "$export_file" | while IFS=';' read -r line; do
-        # Przenieś kolumnę 'Computer' na początek i dodaj 'SOSGodzina' (pustą)
-        #echo "$item;${line#*;}" >> $output_file
-        echo "$item;$line" >> $output_file
-    done
-done < "$zestawienie_file"
+# Pętla po każdym hoście w pliku zestawienie1.csv
+while IFS= read -r host; do
+  # Usunięcie białych znaków z początku i końca nazwy hosta
+  host=$(echo "$host" | tr -d '[:space:]')
 
-echo "Wynik zapisano do pliku $output_file"
+  # Wyszukiwanie linii w pliku export1.csv zawierającej dany host
+  linia=$(grep -w -F "$host" "$export")
+
+  # Jeśli linia została znaleziona
+  if [ -n "$linia" ]; then
+    # Zapisanie do pliku wyniki.csv
+    echo "$host;$linia" >> "$wyniki"
+  else
+    # Jeśli host nie został znaleziony, zapisujemy tylko nazwę hosta z informacją
+    echo "$host;Nie znaleziono w pliku export1.csv" >> "$wyniki"
+  fi
+done < "$zestawienie"
+
+echo "Zakończono. Wyniki zapisano w pliku: $wyniki"
+
